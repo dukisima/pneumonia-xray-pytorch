@@ -14,11 +14,17 @@ class PneumoniaDataset(Dataset):
     @property
     def classes(self):
         return self.data.classes
+    @property
+    def target(self):
+        return self.data.targets #list of labels
+    @property
+    def samples(self):
+        return self.data.samples
 
 #../ in data_dir si to sy go one step above bc this script is in src so it doesn't see data
 train_directory = "../data/chest_xray/train"
-val_directory = "../data/chest_xray/train"
-test_directory = "../data/chest_xray/train"
+val_directory = "../data/chest_xray/val"
+test_directory = "../data/chest_xray/test"
 
 train_dataset = PneumoniaDataset(data_dir=train_directory, transform=transforms.train_transforms)
 val_dataset = PneumoniaDataset(val_directory,  transform=transforms.test_val_transforms)
