@@ -47,6 +47,7 @@ optimizer = models.optimizer   # optimiser from the setting
 # -----------------------------
 train_losses, val_losses = [], []   # epoch-level losses
 num_epochs = 15
+
 # -----------------------------
 # Early stopping and best model weights tracking
 # -----------------------------
@@ -56,6 +57,15 @@ stall = 0               # how many epochs without improvement has there been
 
 os.makedirs("checkpoints", exist_ok=True) #just in case it desnt exist
 
+# -----------------------------
+# Scheduler (auto adjusting of learning rate(lr))
+# -----------------------------
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer=optimizer,
+    mode="min",     # we are minimising val_loss
+    factor=0.5,     # when activated -> lr = lr * 0.5
+    patience=2,     # wait 2 epoch before adjusting
+)
 
 for i in range(num_epochs):
     # -------- TRAIN PHASE --------
@@ -115,10 +125,16 @@ for i in range(num_epochs):
     val_losses.append(val_loss)
     val_acc = correct / total
 
+    # -------- Schedulers --------
+    scheduler.step(val_loss)
+    # get current LR (from first param group)
+    current_lr = optimizer.param_groups[0]['lr']
+
     tqdm.write(
         f"Epoch {i+1}/{num_epochs} - "
         f"Train loss: {train_loss:.4f}, acc: {train_acc:.3f} | "
-        f"Val loss: {val_loss:.4f}, acc: {val_acc:.3f}"
+        f"Val loss: {val_loss:.4f}, acc: {val_acc:.3f} |"
+        f"Current learning rate: {current_lr:.6f}"
     )
 
     # -------- Save-best and early stopping by Val loss --------
