@@ -1,80 +1,147 @@
 import torch
+import torch.nn as nn
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
+from collections import Counter
+import os
 
-import models
-import datasets
+import models          # model/optimizer live here
+import datasets        # loaders live here
 
-#Datasets and dataloaders
+# -----------------------------
+# Data (datasets & dataloaders)
+# -----------------------------
 train_dataset = datasets.train_dataset
-train_loader = datasets.train_loader
+val_dataset   = datasets.val_dataset
 
-val_dataset = datasets.val_dataset
-val_loader = datasets.val_loader
+train_loader  = datasets.train_loader
+val_loader    = datasets.val_loader
 
-#Model/loss function/optimiser
-model = models.model
-optimizer = models.optimizer
-criterion = models.criterion
-
-
-train_losses, val_losses = [], [] #losses for the epoch
-correct, total = 0,0
-num_epochs = 5
-
-#Making sure it is running on GPU
+# -----------------------------
+# Model & Device (making sure it runs on GPU)
+# -----------------------------
+model  = models.model
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-model.to(device) #moving a model to a devide(GPU)
+model.to(device)   # move model to GPU (MPS) or CPU
+
+# -----------------------------
+# Class weights (for imbalance)
+# -----------------------------
+class_counts  = Counter(train_dataset.targets)     # works with ListImageDataset.targets
+num_classes   = len(train_dataset.classes)
+
+counts_tensor = torch.tensor([class_counts.get(i, 0) for i in range(num_classes)],dtype=torch.float)
+counts_tensor = torch.clamp(counts_tensor, min=1.0)
+
+weights  = 1.0 / counts_tensor
+weights  = weights / weights.sum()
+
+# -----------------------------
+# Loss & Optimizer
+# -----------------------------
+criterion = nn.CrossEntropyLoss(weight=weights.to(device))
+optimizer = models.optimizer   # optimiser from the setting
+
+# -----------------------------
+# Tracking containers & epochs
+# -----------------------------
+train_losses, val_losses = [], []   # epoch-level losses
+num_epochs = 15
+# -----------------------------
+# Early stopping and best model weights tracking
+# -----------------------------
+best_val = float("inf") # track best validation loss
+patience = 4            # epochs to wait without improvement
+stall = 0               # how many epochs without improvement has there been
+
+os.makedirs("checkpoints", exist_ok=True) #just in case it desnt exist
+
 
 for i in range(num_epochs):
-    #Train phase
+    # -------- TRAIN PHASE --------
     model.train()
     running_loss = 0.0
-    for images,labels in tqdm(train_loader, desc=f"Train {i+1}/{num_epochs}"):
-        images = images.to(device)#moving images to GPU
-        labels = labels.to(device)#moving labels to GPU
-        optimizer.zero_grad() #sets all the gradietns (atributs) to 0 sot that they don't accumulate
-        outputs = model(images)
-        loss = criterion(outputs,labels)#here we calculate loss
-        loss.backward() #backprobagation (recalebrate parametrs)
-        optimizer.step() #uses gradinets calculated in backpropagation to update weights
-        running_loss += loss.item() * images.size(0) #batch loss * batch size
-        #------Accuracy------
-        _, preds = torch.max(outputs, 1)  # indeks klase sa max logitom
-        correct += (preds == labels).sum().item()
-        total += labels.size(0)
+    correct, total = 0, 0  # reset per-phase (train)
 
-    train_loss = running_loss / len(train_loader.dataset) #this is a loss for a whole epoch
-    train_losses.append(train_loss) #u videu nije definisao train_losses ali njemu ne crveni da koai nije definisano
+    for images, labels in tqdm(train_loader, desc=f"Train {i+1}/{num_epochs}"):
+        # move batch to device
+        images = images.to(device)
+        labels = labels.to(device)
+
+        # forward + loss
+        optimizer.zero_grad()              # clear stale gradients
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+
+        # backward + update
+        loss.backward()                    # backprop through the graph
+        optimizer.step()                   # update weights using gradients
+
+        # accumulate epoch loss (sum over samples)
+        running_loss += loss.item() * images.size(0)
+
+        # accuracy for this batch
+        _, preds = torch.max(outputs, 1)   # class index with max logit
+        correct += (preds == labels).sum().item()
+        total   += labels.size(0)
+
+    # epoch-level train metrics
+    train_loss = running_loss / len(train_loader.dataset)
+    train_losses.append(train_loss)
     train_acc = correct / total
 
-    #Validation phase
+    # -------- VALIDATION PHASE --------
     model.eval()
     running_loss = 0.0
-    correct, total = 0, 0
-    with torch.no_grad(): #this is so that the parameters (weights) are not changed
+    correct, total = 0, 0  # reset per-phase (val)
+
+    with torch.no_grad():  # no gradient updates during validation
         for images, labels in tqdm(val_loader, desc=f"Val {i+1}/{num_epochs}"):
-            images = images.to(device)  # moving images to GPU
-            labels = labels.to(device)  # moving labels to GPU
+            images = images.to(device)
+            labels = labels.to(device)
+
             outputs = model(images)
             loss = criterion(outputs, labels)
+
             running_loss += loss.item() * images.size(0)
 
-            #------Acuracy------
-            _, preds = torch.max(outputs, 1)  # indeks klase sa max logitom
+            # accuracy for this batch
+            _, preds = torch.max(outputs, 1)
             correct += (preds == labels).sum().item()
-            total += labels.size(0)
+            total   += labels.size(0)
 
-        val_loss = running_loss / len(val_loader.dataset)
-        val_losses.append(val_loss)
-        val_acc = correct/total
+    # epoch-level val metrics
+    val_loss = running_loss / len(val_loader.dataset)
+    val_losses.append(val_loss)
+    val_acc = correct / total
 
-    tqdm.write(f"Epoch {i+1}/{num_epochs} - Train loss: {train_loss:.4f}, acc: {train_acc:.3f} | Val loss: {val_loss:.4f}, acc: {val_acc:.3f}")
+    tqdm.write(
+        f"Epoch {i+1}/{num_epochs} - "
+        f"Train loss: {train_loss:.4f}, acc: {train_acc:.3f} | "
+        f"Val loss: {val_loss:.4f}, acc: {val_acc:.3f}"
+    )
 
-# --------- Visualisation ---------
+    # -------- Save-best and early stopping by Val loss --------
+    if val_loss < best_val:
+        best_val = val_loss
+        stall = 0
+        torch.save({
+            "model_state": model.state_dict(), # current model weights
+            "val_loss": val_loss,
+            "val_acc": val_acc
+        }, "../checkpoints/best_model.pt")
+        tqdm.write(" ✅ Saved  new  best ")
+    else:
+        stall += 1
+        if stall >= patience:
+            tqdm.write("No improvement | Early stopping triggered ")
+            break
 
+
+
+# -------- Visualization --------
 plt.plot(train_losses, label="Training loss")
-plt.plot(val_losses, label="Val loss")
+plt.plot(val_losses,   label="Val loss")
+plt.title("Loss per epoch")
 plt.legend()
-plt.title("Loss function per epoch")
 plt.show()

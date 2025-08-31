@@ -26,17 +26,6 @@ class PneumoniaClassifier(nn.Module):
 model = PneumoniaClassifier(num_classes=2, freeze_backbone=True)
 x = torch.rand(8,3,224,224) #4 img, RGB, 224x224
 y = model(x)
-# print(y.shape) #should be [batch_size, num_classes]
-
-#Loss functions (unbalanced train (it has 3x more penumonia then noramal))
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-targets = [y for _, y in datasets.train_dataset.samples]  # ako koristiš ImageFolder unutra
-print(Counter(targets))  # npr. {0: 1341, 1: 3875}
-counts = Counter(targets)
-class_counts = torch.tensor([counts[c] for c in range(len(datasets.train_dataset.classes))], dtype=torch.float)
-weights = (1.0 / class_counts).to(device)
-
-criterion = nn.CrossEntropyLoss(weight=weights)
 
 #Optimizers (make sure to add filter bc we froze backbone)
 optimizer = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad), lr=3e-4, weight_decay=1e-2)
