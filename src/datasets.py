@@ -25,7 +25,7 @@ class PneumoniaDataset(Dataset):
         return self.data.samples
 
 class ListImageDataset(Dataset):
-    def __init__(self,sample, class_names,transform=True ):
+    def __init__(self,sample, class_names, transform=True ):
         self.sample = sample #list (path, label)
         self.class_names = class_names #class names: ['NORMAL', 'PNEUMOINA']
         self.transform = transform
@@ -37,6 +37,7 @@ class ListImageDataset(Dataset):
         if self.transform is not None:
             image = self.transform(image)
         return image, label
+
     @property
     def classes(self):
         return self.class_names
@@ -72,8 +73,8 @@ new_train_samples = [pooled_samples[i] for i in train_idx]
 new_val_samples = [pooled_samples[i] for i in val_idx]
 train_counts = Counter([lbl for _, lbl in new_train_samples])
 val_counts   = Counter([lbl for _, lbl in new_val_samples])
-print("New TRAIN class counts:", train_counts)
-print("New VAL   class counts:", val_counts)
+# print("New TRAIN class counts:", train_counts)
+# print("New VAL   class counts:", val_counts)
 
 # NEW datasets and dataloaders
 
@@ -87,10 +88,12 @@ test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False, num_workers=
 
 
 images, labels = next(iter(train_loader))
-print(images.shape, labels.shape)  # očekuješ [B, 3, 224, 224], [B]
+# print(images.shape, labels.shape)  # expecting [B, 3, 224, 224], [B]
 
 
-
+#---------------------------
+# ORIGINAL TRAIN/VAL SPLIT
+#---------------------------
 
 
 # train_dataset = PneumoniaDataset(data_dir=train_directory, transform=transforms.train_transforms)
