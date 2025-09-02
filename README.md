@@ -50,6 +50,13 @@ Confusion matrix on the held-out test set:
 ![Confusion Matrix](outputs/figures/confusion_matrix_20250901-183716.png)
 
 ---
+## Grad-CAM Visualizations
+
+Below are some Grad-CAM overlays showing which regions the model used for classification:
+<p align="center">
+  <img src="outputs/figures/gradcam_NORMAL_03_20250902-101256.png" width="45%">
+  <img src="outputs/figures/gradcam_PNEUMONIA_02_20250902-101251.png" width="45%">
+</p>
 
 ## Quick Demo
 
