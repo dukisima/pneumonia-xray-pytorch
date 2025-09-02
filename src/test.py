@@ -9,9 +9,12 @@ import os
 import matplotlib.pyplot as plt
 from src import transforms as T
 from src import datasets
+from src.gradcam import GradCAM
 import pandas as pd
 from datetime import datetime
 import numpy as np
+import time
+
 
 
 # --------- Single-image preprocessing ---------
@@ -98,14 +101,7 @@ def evaluate_model(model, loader, device, class_names):
 
 
 # --------- Save figures + metrics to disk ---------
-def save_metrics(
-    y_true,
-    y_pred,
-    class_names,
-    accuracy: float,
-    precision: float,
-    recall: float,
-    f1: float,
+def save_metrics(y_true,y_pred,class_names,accuracy: float,precision: float,recall: float, f1: float,
     run_tag: str = None,
     figs_dir: str = "../outputs/figures",
     metrics_dir: str = "../outputs/metrics",
@@ -162,6 +158,31 @@ def save_metrics(
 
     return {"figure_path": fig_path, "excel_path": xlsx_path}
 
+# --------- GradCAM overlay helper ---------
+def save_gradcam_overlay(original_image_pil, heatmap_01, outfile, alpha=0.45, cmap="jet"):
+    """
+    Blends Grad-CAM heatmap (0..1) on top of original image and saves as PNG
+    """
+    W, H = original_image_pil.size
+    # resize heatmap to original size
+    heatmap_resized = np.array(
+        Image.fromarray((heatmap_01 * 255).astype(np.uint8)).resize((W, H), resample=Image.BILINEAR)
+    ) / 255.0
+
+    # map RGB colormap
+    import matplotlib.pyplot as plt
+    cm = plt.get_cmap(cmap)
+    heatmap_rgb = cm(heatmap_resized)[..., :3]  # drop alpha
+
+    # blend
+    img_rgb = np.array(original_image_pil).astype(np.float32) / 255.0
+    overlay = (1 - alpha) * img_rgb + alpha * heatmap_rgb
+    overlay = (overlay * 255).astype(np.uint8)
+
+    os.makedirs("../outputs/figures", exist_ok=True)
+    Image.fromarray(overlay).save(outfile)
+
+
 
 # --------- Load best checkpoint and run a quick test ---------
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -193,4 +214,23 @@ acc, prec, rec, f1, y_true, y_pred = evaluate_model(
 # save figure + metrics files
 paths = save_metrics(y_true, y_pred, class_names, acc, prec, rec, f1)
 print("Saved:", paths["figure_path"], "and", paths["excel_path"])
+
+# Grad-CAM overlay on demo images
+demo_dir = "../assets/demo_images"
+for fname in os.listdir(demo_dir):
+    if not fname.lower().endswith((".jpg", ".jpeg", ".png")):
+        continue
+    img_path = os.path.join(demo_dir, fname)
+    orig, img_t = process_image(img_path, transform=T.test_val_transforms)
+    img_t = img_t.to(device)
+
+    cam = GradCAM(model, model.baseModel.layer4[-1])
+    heatmap_01, _ = cam(img_t, target_index=None)
+
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    base = os.path.splitext(fname)[0]
+    out_path = f"../outputs/figures/gradcam_{base}_{ts}.png"
+    save_gradcam_overlay(orig, heatmap_01, out_path)
+    cam.remove_hooks()
+    print("Saved:", out_path)
 
