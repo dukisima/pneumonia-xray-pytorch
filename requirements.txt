@@ -8,3 +8,4 @@ tqdm>=4.66
 pandas>=1.5
 openpyxl>=3.1
 numpy>=1.23
+streamlit>=1.49.1

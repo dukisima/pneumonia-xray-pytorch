@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import os
 
-import models          # model/optimizer live here
-import datasets        # loaders live here
+from src import models          # model/optimizer live here
+from src import datasets        # loaders live here
 
 # -----------------------------
 # Data (datasets & dataloaders)

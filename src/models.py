@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 import timm #this includes all the models I'm going to be using
-import datasets
+# from src import datasets
 from collections import Counter
 
 #nn.Module is a base for all models
