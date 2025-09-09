@@ -60,12 +60,22 @@ Below are some Grad-CAM overlays showing which regions the model used for classi
 
 ## Quick Demo
 
-1. Clone the repository and create a virtual environment:
-   ```bash
-   git clone https://github.com/<your-username>/pneumonia-xray-pytorch.git
-   cd pneumonia-xray-pytorch
-   python -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
+## 🧪 Quick Demo
+
+A few sample chest X-ray images are included in [`assets/demo_images/`](assets/demo_images).
+
+### Run locally
+```bash
+git clone https://github.com/<your-username>/pneumonia-xray-pytorch.git
+cd pneumonia-xray-pytorch
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+This will open the app at http://localhost:8501 and:
+- Upload your own X-ray image or pick one from the demo set
+- Show original image and Grad-CAM overlay
+- Show confidence and class predictions
+
    
 ## Data structure
 ```
