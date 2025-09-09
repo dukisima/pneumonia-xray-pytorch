@@ -94,7 +94,7 @@ pneumonia-xray-pytorch/
 
 ## Next steps / possible extensions
 - Try deeper models: ResNet34, DenseNet, EfficientNet.
-- Add Grad-CAM visualizations to highlight which lung regions the model uses for its decision.
+- ~~Add Grad-CAM visualizations to highlight which lung regions the model uses for its decision.~~
 - Experiment with data augmentation or self-supervised pretraining.
 - Build a lightweight Streamlit web demo for interactive testing.
 
