@@ -107,6 +107,7 @@ pneumonia-xray-pytorch/
 - ~~Add Grad-CAM visualizations to highlight which lung regions the model uses for its decision.~~
 - Experiment with data augmentation or self-supervised pretraining.
 - Build a lightweight Streamlit web demo for interactive testing.
+- Experiment with how image quality (e.g., noise, artifacts...)
 
 ## Licence
 MIT License. Free to use for educational and research purposes.
