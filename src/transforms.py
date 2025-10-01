@@ -17,7 +17,7 @@ train_transforms = transforms.Compose([transforms.Resize((224,224)),
                                        ])
 
 
-######### Transforms for test and val (it does not includes augmentations) #######
+######### Transforms for test and val (it does not include augmentations) #######
 
 test_val_transforms = transforms.Compose([transforms.Resize((224, 224)),
                                           transforms.ToTensor(),
