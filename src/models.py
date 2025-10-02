@@ -27,6 +27,31 @@ class PneumoniaClassifier(nn.Module):
         return self.baseModel.num_classes
 
 
+class PneumoniaClassifierMobileNet(nn.Module):
+    def __init__(self, num_classes=2, freeze_backbone=True):
+        super().__init__()
+        # Load pretrained MobileNetV2
+        self.baseModel = timm.create_model('mobilenetv2_100', pretrained=True, num_classes=num_classes)
+
+        if freeze_backbone:
+            for p in self.baseModel.parameters():
+                p.requires_grad = False  # freeze backbone
+
+            # unlock classifier (last linear layer)
+            for p in self.baseModel.get_classifier().parameters():
+                p.requires_grad = True
+
+            # unlock the last block (features[-1])
+            for p in self.baseModel.blocks[-1].parameters():
+                p.requires_grad = True
+
+    def forward(self, x):
+        return self.baseModel(x)
+
+    @property
+    def num_classes(self):
+        return self.baseModel.num_classes
+
 model = PneumoniaClassifier(num_classes=2, freeze_backbone=True)
 x = torch.rand(8,3,224,224) #4 img, RGB, 224x224
 y = model(x)
