@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import os
 
-from src import models          # model/optimizer live here
+from src.models import PneumoniaClassifierMobileNet, PneumoniaClassifier          # model/optimizer live here
 from src import datasets        # loaders live here
 
 # -----------------------------
@@ -20,7 +20,8 @@ val_loader    = datasets.val_loader
 # -----------------------------
 # Model & Device (making sure it runs on GPU)
 # -----------------------------
-model  = models.model
+# model = PneumoniaClassifier
+model = PneumoniaClassifierMobileNet(num_classes=2, freeze_backbone=True) #Training the mobilenetv2
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 model.to(device)   # move model to GPU (MPS) or CPU
 
@@ -40,7 +41,7 @@ weights  = weights / weights.sum()
 # Loss & Optimizer
 # -----------------------------
 criterion = nn.CrossEntropyLoss(weight=weights.to(device))
-optimizer = models.optimizer   # optimiser from the setting
+optimizer = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad), lr=3e-4, weight_decay=1e-2)   # optimiser from the setting
 
 # -----------------------------
 # Tracking containers & epochs
@@ -145,7 +146,7 @@ for i in range(num_epochs):
             "model_state": model.state_dict(), # current model weights
             "val_loss": val_loss,
             "val_acc": val_acc
-        }, "../checkpoints/best_model.pt")
+        }, "../checkpoints/best_model_mobilenet.pt")
         tqdm.write(" ✅ Saved  new  best ")
     else:
         stall += 1

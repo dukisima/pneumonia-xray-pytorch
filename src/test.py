@@ -3,7 +3,7 @@ from sklearn.metrics import (
     f1_score, confusion_matrix, ConfusionMatrixDisplay
 )
 import torch
-from models import PneumoniaClassifier
+from models import PneumoniaClassifierMobileNet
 from PIL import Image
 import os
 import matplotlib.pyplot as plt
@@ -188,8 +188,8 @@ def save_gradcam_overlay(original_image_pil, heatmap_01, outfile, alpha=0.45, cm
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 # rebuild same architecture (weights will be loaded next)
-model = PneumoniaClassifier(num_classes=2, freeze_backbone=False)
-ckpt = torch.load("../checkpoints/best_model.pt", map_location=device)
+model = PneumoniaClassifierMobileNet(num_classes=2, freeze_backbone=False)
+ckpt = torch.load("../checkpoints/best_model_mobilenet.pt", map_location=device)
 
 # load weights
 model.load_state_dict(ckpt["model_state"])
@@ -224,12 +224,13 @@ for fname in os.listdir(demo_dir):
     orig, img_t = process_image(img_path, transform=T.test_val_transforms)
     img_t = img_t.to(device)
 
-    cam = GradCAM(model, model.baseModel.layer4[-1])
+    #cam = GradCAM(model, model.baseModel.layer4[-1]) #This is for ResNet18
+    cam = GradCAM(model, model.baseModel.blocks[-1])  #we need this for MobileNetV2
     heatmap_01, _ = cam(img_t, target_index=None)
 
     ts = time.strftime("%Y%m%d-%H%M%S")
     base = os.path.splitext(fname)[0]
-    out_path = f"../outputs/figures/gradcam_{base}_{ts}.png"
+    out_path = f"../outputs/figures/Grad-CAM MobileNetV2/gradcam_{base}_{ts}.png"
     save_gradcam_overlay(orig, heatmap_01, out_path)
     cam.remove_hooks()
     print("Saved:", out_path)
