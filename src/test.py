@@ -189,7 +189,7 @@ device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 # rebuild same architecture (weights will be loaded next)
 model = PneumoniaClassifierMobileNet(num_classes=2, freeze_backbone=False)
-ckpt = torch.load("../checkpoints/best_model_mobilenet.pt", map_location=device)
+ckpt = torch.load("../checkpoints/MobileNetV2_chest_xray.pt", map_location=device)
 
 # load weights
 model.load_state_dict(ckpt["model_state"])

@@ -20,7 +20,7 @@ def get_device():
     return torch.device("cpu")
 
 @st.cache_resource
-def load_model_and_device(ckpt_path="checkpoints/best_model.pt"):
+def load_model_and_device(ckpt_path="checkpoints/ResNet18_chest_xray.pt"):
     device = get_device()
     model = PneumoniaClassifier(num_classes=2, freeze_backbone=False)
     ckpt = torch.load(ckpt_path, map_location=device)
@@ -69,7 +69,7 @@ st.title("Pneumonia X-ray Classifier (ResNet18 + Grad-CAM)")
 
 # Sidebar: model checkpoint + mode
 st.sidebar.header("Settings")
-ckpt_path = st.sidebar.text_input("Path to .pt model", value="checkpoints/best_model.pt")
+ckpt_path = st.sidebar.text_input("Path to .pt model", value="checkpoints/ResNet18_chest_xray.pt")
 mode = st.sidebar.radio("Input source", ["Upload image", "Demo image"])
 
 # Try loading model

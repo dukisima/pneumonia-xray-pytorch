@@ -53,11 +53,11 @@ DATASETS = [
 MODELS = {
     "ResNet18": {
         "cls": PneumoniaClassifier,
-        "ckpt": "../checkpoints/best_model.pt",
+        "ckpt": "../checkpoints/ResNet18_chest_xray.pt",
     },
     "MobileNetV2": {
         "cls": PneumoniaClassifierMobileNet,
-        "ckpt": "../checkpoints/best_model_mobilenet.pt",
+        "ckpt": "../checkpoints/MobileNetV2_chest_xray.pt",
     },
 }
 

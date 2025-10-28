@@ -146,7 +146,7 @@ for i in range(num_epochs):
             "model_state": model.state_dict(), # current model weights
             "val_loss": val_loss,
             "val_acc": val_acc
-        }, "../checkpoints/best_model_mobilenet.pt")
+        }, "../checkpoints/MobileNetV2_chest_xray.pt")
         tqdm.write(" ✅ Saved  new  best ")
     else:
         stall += 1

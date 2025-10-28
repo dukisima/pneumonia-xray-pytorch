@@ -165,4 +165,5 @@ cython_debug/
 
 data/
 checkpoints/
-
+src/tets.py
+src/proba.py
